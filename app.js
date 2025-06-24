@@ -4,27 +4,36 @@ const dropdowns = document.querySelectorAll(".dropdown select");
 const btn = document.querySelector("form button");
 const fromCurr = document.querySelector(".from select");
 const toCurr = document.querySelector(".to select");
-
 const msg = document.querySelector(".msg");
-
 const swapIcon = document.querySelector("#swap-icon");
 
 for (let select of dropdowns) {
-  for (currCode in countryList) {
+  for (let currCode in countryList) {
     let newOption = document.createElement("option");
     newOption.innerText = currCode;
     newOption.value = currCode;
+
     if (select.name === "from" && currCode === "USD") {
-      newOption.selected = "selected";
+      newOption.selected = true;
     } else if (select.name === "to" && currCode === "INR") {
-      newOption.selected = "selected";
+      newOption.selected = true;
     }
+
     select.append(newOption);
   }
+
   select.addEventListener("change", (evt) => {
     updateFlag(evt.target);
   });
 }
+
+const updateFlag = (element) => {
+  const currCode = element.value;
+  const countryCode = countryList[currCode];
+  const newSrc = `https://flagsapi.com/${countryCode}/shiny/64.png`;
+  const img = element.parentElement.querySelector("img");
+  img.src = newSrc;
+};
 
 fromCurr.addEventListener("change", () => {
   if (fromCurr.value === toCurr.value) {
@@ -60,37 +69,37 @@ swapIcon.addEventListener("click", () => {
   toCurr.value = temp;
 
   swapIcon.classList.add("rotate");
-  setTimeout(() => swapIcon.classList.remove("rotate"), 500);
+  setTimeout(() => {
+    swapIcon.classList.remove("rotate");
+  }, 400); 
 
   updateFlag(fromCurr);
   updateFlag(toCurr);
-
   updateExchangeRate();
 });
 
 const updateExchangeRate = async () => {
-  let amount = document.querySelector(".amount input");
-  let amtval = amount.value;
+  const amountInput = document.querySelector(".amount input");
+  let amtval = amountInput.value;
+
   if (amtval === "" || amtval < 1) {
     amtval = 1;
-    amount.value = "1";
+    amountInput.value = "1";
   }
 
   const url = `${baseurl}=${fromCurr.value}&to=${toCurr.value}`;
-  let response = await fetch(url);
-  let data = await response.json();
-  let rate = Object.values(data.rates)[0];
 
-  let finalAmount = amtval * rate;
-  msg.innerText = `${amtval} ${fromCurr.value} = ${finalAmount} ${toCurr.value}`;
-};
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    const rate = Object.values(data.rates)[0];
+    const finalAmount = (amtval * rate).toFixed(2);
 
-const updateFlag = (element) => {
-  let currCode = element.value;
-  let countryCode = countryList[currCode];
-  let newSrc = `https://flagsapi.com/${countryCode}/shiny/64.png`;
-  let img = element.parentElement.querySelector("img");
-  img.src = newSrc;
+    msg.innerText = `${amtval} ${fromCurr.value} = ${finalAmount} ${toCurr.value}`;
+  } catch (error) {
+    msg.innerText = "Failed to fetch exchange rate.";
+    console.error("Error fetching data:", error);
+  }
 };
 
 btn.addEventListener("click", (evt) => {
